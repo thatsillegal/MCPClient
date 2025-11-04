@@ -21,6 +21,8 @@ namespace MCPClientExample
 {
     class Program
     {
+        private static bool _runNewCommand = false;
+
         static async Task Main(string[] args)
         {
             // 1️⃣ 启动本地 MCP Server 客户端
@@ -83,7 +85,13 @@ namespace MCPClientExample
                 .Build();
 
             // Have a conversation, making all tools available to the LLM.
-            List<ChatMessage> messages = [];
+            List<ChatMessage> messages =
+            [
+                new(ChatRole.System,
+                    "你是自动建模AI，你接收用户的请求，寻找合适的函数，直接返回函数的运行结果（如果是json就返回json），" +
+                    "不要多加任何一句自然语言，也不要改写为自然语言；只需要将其序列化成string返回就行" +
+                    "如果没找到合适的函数，则返回\"抱歉，暂不支持该功能。\"")
+            ];
             while (true)
             {
                 Console.Write("Q: ");
@@ -97,9 +105,20 @@ namespace MCPClientExample
                 {
                     List<ChatResponse> updates = [];
                     ChatResponse res = await chatClient.GetResponseAsync(messages, new() { Tools = [.. tools] });
+                    if (res == null)
+                        Console.WriteLine("抱歉，未能返回正确结果");
+                    else
+                    {
+                        if (IsValidJson(res.Text))
+                        {
+                            string path = @"F:\Temp\llm_output.json";  // 文件不存在则创建，存在则覆盖
+                            File.WriteAllText(path, res.Text);  // 路径不存在或权限不足会抛异常
+                            _runNewCommand = true;
+                        }
+                        Console.WriteLine($"A: {res}");
+                        messages.AddMessages(res);
+                    }
 
-                    Console.WriteLine($"A: {res}");
-                    messages.AddMessages(res);
                 }
                 catch (Exception ex)
                 {
@@ -107,7 +126,25 @@ namespace MCPClientExample
                 }
             }
         }
+
+        public static bool IsValidJson(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return false;
+
+            try
+            {
+                JsonDocument.Parse(input);
+                return true;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return false;
+            }
+        }
     }
+
+
 
     public class Monkey
     {
@@ -140,7 +177,12 @@ namespace MCPClientExample
                 model = $"{model_name}",
                 messages = new[]
                 {
-                    new { role = "system", content = "你是专业的软件客服" },
+                    new { role = "system", content =
+                        "你是一个自动建模AI助手。你的任务是根据用户输入，决定是否调用已注册的函数。" +
+                        "请牢记，用户输入的是一个动作，而你也要返回动作本身的数据格式（比如JSON），不需要说其他的。"+
+                        "如果找到合适的函数，就直接返回该函数执行的结果（JSON或字符串原样返回）。" +
+                        "不要生成自然语言解释或额外文字。" +
+                        "如果没有合适的函数，则返回：{\"error\": \"暂不支持该功能\"}。" },
                     new { role = "user", content = request_content }
                 },
                 stream = false
