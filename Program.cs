@@ -25,6 +25,8 @@ namespace MCPClientExample
 
         static async Task Main(string[] args)
         {
+
+
             // 1️⃣ 启动本地 MCP Server 客户端
             var clientTransport = new StdioClientTransport(new StdioClientTransportOptions
             {
@@ -88,9 +90,10 @@ namespace MCPClientExample
             List<ChatMessage> messages =
             [
                 new(ChatRole.System,
-                    "你是自动建模AI，你接收用户的请求，寻找合适的函数，直接返回函数的运行结果（如果是json就返回json），" +
-                    "不要多加任何一句自然语言，也不要改写为自然语言；只需要将其序列化成string返回就行" +
-                    "如果没找到合适的函数，则返回\"抱歉，暂不支持该功能。\"")
+                    "你是建模软件的智能AI，你接收用户自动建模的诉求，帮助用户完善输入条件，然后将其编译为可直接执行的dll文件，然后返回其json结果（包含地址和成功信息）。" +
+                    //"不要多加任何一句自然语言，也不要改写为自然语言；只需要将其序列化成string返回就行。" +
+                    "如果成功，返回其文件地址；"+
+                    "如果失败，则返回\"抱歉，暂不支持该功能。\"")
             ];
             while (true)
             {
