@@ -22,6 +22,9 @@ namespace MCPClientExample
     class Program
     {
         private static bool _runNewCommand = false;
+        private static string api_key = "sk-08f8d3be893a46228b9de7b544755e65"; //我自己申请的10元账号api
+        private static string api_url = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        private static string model_name = "qwen-plus";
 
         static async Task Main(string[] args)
         {
@@ -47,8 +50,6 @@ namespace MCPClientExample
                 Console.WriteLine($"{tool.Name} ({tool.Description})");
             }
 
-            //ModelContextProtocol.Protocol.TextContentBlock
-
             // Execute a tool (this would normally be driven by LLM tool invocations).
             var result = await client.CallToolAsync(
                 "echo",
@@ -59,24 +60,17 @@ namespace MCPClientExample
             var textBlock = result.Content.First(c => c.Type == "text") as TextContentBlock; // 转型失败返回 null
             Console.WriteLine(textBlock?.Text);
 
-            // LLM
-            //var llm = new LLM();
-            //var response = await llm.GetResponse(user_message:"hello", content_info: "nothing", token: CancellationToken.None);
-            //Console.WriteLine(response);
-
             // Options 里指定 BaseUri
             var options = new OpenAIClientOptions
             {
-                Endpoint = new Uri("https://api.deepseek.com") // DeepSeek API 地址
+                Endpoint = new Uri(api_url) // DeepSeek API 地址
             };
 
-            // 从环境变量读取 API Key（或者直接写字符串，但不推荐）
-            //var credential = new ApiKeyCredential("");
-            var credential = new ApiKeyCredential("sk-ba474a00a0dd42d5b9ff80dc97d04abc");
+            var credential = new ApiKeyCredential(api_key);
 
             // 创建客户端
             var deepSeekClient = new OpenAIClient(credential, options)
-                .GetChatClient("deepseek-chat"); // 模型名称按 DeepSeek 文档写
+                .GetChatClient(model_name); // 模型名称按 DeepSeek 文档写
 
             // 转成 IChatClient
             IChatClient aliClient = deepSeekClient.AsIChatClient();
@@ -90,8 +84,7 @@ namespace MCPClientExample
             List<ChatMessage> messages =
             [
                 new(ChatRole.System,
-                    "你是建模软件的智能AI，你接收用户自动建模的诉求，帮助用户完善输入条件，然后将其编译为可直接执行的dll文件，然后返回其json结果（包含地址和成功信息）。" +
-                    //"不要多加任何一句自然语言，也不要改写为自然语言；只需要将其序列化成string返回就行。" +
+                    "你是建模软件的智能AI，你接收用户自动建模的诉求，帮助用户完善输入条件，注意函数需要输入尺寸的单位，然后将其编译为可直接执行的dll文件，然后返回其json结果（包含地址和成功信息）。" +
                     "如果成功，返回其文件地址；"+
                     "如果失败，则返回\"抱歉，暂不支持该功能。\"")
             ];
@@ -163,9 +156,9 @@ namespace MCPClientExample
     public class LLM()
     {
         // deepseek - api
-        private string api_key_myown_deepseek = "sk-ba474a00a0dd42d5b9ff80dc97d04abc"; //我自己申请的10元账号api
-        private string api_url_myown_deepseek = "https://api.deepseek.com/chat/completions";
-        private string model_name = "deepseek-chat";
+        private string api_key_myown_deepseek = "sk-08f8d3be893a46228b9de7b544755e65"; //我自己申请的10元账号api
+        private string api_url_myown_deepseek = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        private string model_name = "qwen-plus";
 
         public async Task<string> GetResponse(string user_message, string content_info , CancellationToken token)
         {
